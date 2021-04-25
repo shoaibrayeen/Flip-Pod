@@ -39,4 +39,9 @@ public class OrderController {
   public BaseResponse<List<Order>> getAllDeliveredOrders() {
     return orderService.getAllDeliveredOrders();
   }
+
+  @GetMapping(Endpoints.ALL_PLACED_ORDERS)
+  public BaseResponse<List<Order>> getAllPlacedOrders() {
+    return orderService.getAllPlacedOrders();
+  }
 }

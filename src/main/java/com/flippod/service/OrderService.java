@@ -26,91 +26,124 @@ public class OrderService {
   @Autowired
   private PodService podService;
 
-  List<Order> placedOrders = new ArrayList<Order>();
-  List<Order> deliveredOrders = new ArrayList<Order>();
+  List<Order> orders = new ArrayList<Order>();
 
   public BaseResponse<List<Order>> getAllOrders() {
-    String message = Constants.SUCCESS_MESSAGE;
-    if(applicationUtils.isEmpty(placedOrders)) {
-      message = Constants.NO_DATA_FOUND;
-    }
-    return BaseResponse.<List<Order>>builder().code(Constants.SUCCESS_CODE).message(message).response(placedOrders).build();
+    String message = returnResponseMessage(orders);
+    return BaseResponse.<List<Order>>builder().code(Constants.SUCCESS_CODE).message(message).response(orders).build();
   }
 
   public <T> BaseResponse<T> addOrder(Order order) {
+    return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(placeOrder(order)).build();
+  }
+
+  public <T> BaseResponse<T> getOrder(ReceiveOrder order) {
+    return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(receiveOrder(order)).build();
+  }
+
+  public BaseResponse<List<Order>> getAllPlacedOrders() {
+    List<Order> placedOrders = getOrders(Status.PLACED.getStatus());
+    String message = returnResponseMessage(placedOrders);
+    return BaseResponse.<List<Order>>builder().code(Constants.SUCCESS_CODE).message(message).response(placedOrders).build();
+  }
+
+  public BaseResponse<List<Order>> getAllDeliveredOrders() {
+    List<Order> deliveredOrders = getOrders(Status.DELIVERED.getStatus());
+    String message = returnResponseMessage(deliveredOrders);
+    return BaseResponse.<List<Order>>builder().code(Constants.SUCCESS_CODE).message(message).response(deliveredOrders).build();
+  }
+
+  private List<Order> getOrders(String status) {
+    List<Order> orderList = new ArrayList<Order>();
+    for (Order order : orders) {
+      if(order.getOrderStatus().getStatus().equalsIgnoreCase(status)) {
+        orderList.add(order);
+      }
+    }
+    return orderList;
+  }
+
+  private String receiveOrder(ReceiveOrder receiveOrder) {
+    String customerId = customerService.returnCustomerId(receiveOrder.getCustomerId());
+    if(customerId.isEmpty()) {
+      return Constants.BAD_CUSTOMER;
+    }
+    String pod = receiveOrder.getPod();
+    if (podService.isPodAvailable(pod)) {
+      if(isOrderFound(pod, customerId)) {
+        freeLocker(pod, customerId);
+      }
+      else {
+        return Constants.NO_ORDER;
+      }
+    }
+    else {
+      return Constants.NO_POD_FOUND;
+    }
+    placeQueuedOrders();
+    return Constants.RECEIVED_ORDER + pod;
+  }
+
+  private String placeOrder(Order order) {
     String customerId = customerService.returnCustomerId(order.getCustomerName());
     if(customerId.isEmpty()) {
-      return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(Constants.BAD_CUSTOMER).build();
+      return Constants.BAD_CUSTOMER;
     }
     if(!podService.isPodAvailable(order.getPod())) {
-      return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(Constants.NO_POD_FOUND).build();
+      return Constants.NO_POD_FOUND;
     }
-    String message = Constants.SUCCESS_MESSAGE;
     order.setCustomerId(customerId);
     order.setOrderId(applicationUtils.getUUID());
     if(lockerService.isLockerFree(order)) {
       order.setOrderStatus(Status.PLACED);
-      placedOrders.add(order);
+      orders.add(order);
     }
     else {
       order.setOrderStatus(Status.PENDING);
       lockerService.addQueue(order);
-      message = Constants.PENDING_MESSAGE;
+      return Constants.PENDING_MESSAGE;
     }
-    return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(message).build();
+    return Constants.SUCCESS_MESSAGE;
   }
 
-  public <T> BaseResponse<T> getOrder(ReceiveOrder receiveOrder) {
-    String pod = receiveOrder.getPod();
-    String message = Constants.RECEIVED_ORDER + pod;
-    String customerId = customerService.returnCustomerId(receiveOrder.getCustomerId());
-    if(customerId.isEmpty()) {
-      message = Constants.BAD_CUSTOMER;
-    }
-    else {
-      if (podService.isPodAvailable(pod)) {
-        if(isOrderFound(pod, customerId)) {
-          freeAllLockersPodCustomerOrders(pod, customerId);
-        }
-        else {
-          message = Constants.NO_ORDER;
-        }
-      }
-      else {
-        message = Constants.NO_POD_FOUND;
-      }
-    }
-    return BaseResponse.<T>builder().code(Constants.SUCCESS_CODE).message(message).build();
-  }
-
-  public boolean isOrderFound(String pod, String customerId) {
-    if(placedOrders.isEmpty()) {
+  private boolean isOrderFound(String pod, String customerId) {
+    if(orders.isEmpty()) {
       return false;
     }
-    for (Order order : placedOrders) {
-      if(order.getPod().equalsIgnoreCase(pod) && order.getCustomerId().equalsIgnoreCase(customerId)) {
+    for (Order order : orders) {
+      if(order.getPod().equalsIgnoreCase(pod) && order.getCustomerId().equalsIgnoreCase(customerId)
+          && order.getOrderStatus().getStatus().equalsIgnoreCase(Status.PLACED.getStatus())) {
         return true;
       }
     }
     return false;
   }
 
-  public void freeAllLockersPodCustomerOrders(String pod, String customerId) {
-    for (Order order : placedOrders) {
-      if(order.getPod().equalsIgnoreCase(pod) && order.getCustomerId().equalsIgnoreCase(customerId)) {
-        lockerService.freeAllLockers(order.getLockerId());
+  private void freeLocker(String pod, String customerId) {
+    for (Order order : orders) {
+      if(order.getPod().equalsIgnoreCase(pod) && order.getCustomerId().equalsIgnoreCase(customerId)
+          && order.getOrderStatus().getStatus().equalsIgnoreCase(Status.PLACED.getStatus())) {
+        lockerService.freeLocker(order.getLockerId());
         order.setOrderStatus(Status.DELIVERED);
-        placedOrders.remove(order);
-        deliveredOrders.add(order);
       }
     }
   }
 
-  public BaseResponse<List<Order>> getAllDeliveredOrders() {
-    String message = Constants.SUCCESS_MESSAGE;
-    if(applicationUtils.isEmpty(deliveredOrders)) {
-      message = Constants.NO_DATA_FOUND;
+  private String returnResponseMessage(List list) {
+    if(applicationUtils.isEmpty(list)) {
+      return Constants.NO_DATA_FOUND;
     }
-    return BaseResponse.<List<Order>>builder().code(Constants.SUCCESS_CODE).message(message).response(deliveredOrders).build();
+    return Constants.SUCCESS_MESSAGE;
+  }
+
+  private void placeQueuedOrders() {
+    if(lockerService.isQueueEmpty()) {
+      return;
+    }
+    Order order = lockerService.getQueuedOrder();
+    while(placeOrder(order).equalsIgnoreCase(Constants.SUCCESS_MESSAGE)) {
+     lockerService.removeQueuedOrder();
+     order = lockerService.getQueuedOrder();
+    }
   }
 }
