@@ -1,13 +1,13 @@
-package com.springboot.demo;
+package com.flippod;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DemoApplication {
+public class FlipPodApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DemoApplication.class, args);
+		SpringApplication.run(FlipPodApplication.class, args);
 	}
 
 }

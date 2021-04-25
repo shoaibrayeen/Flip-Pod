@@ -1,10 +1,10 @@
-package com.springboot.demo;
+package com.flippod;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DemoApplicationTests {
+class FlipPodApplicationTests {
 
 	@Test
 	void contextLoads() {

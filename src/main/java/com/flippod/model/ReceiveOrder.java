@@ -1,4 +1,4 @@
-package com.springboot.demo.model;
+package com.flippod.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,9 +11,9 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PersonRequest {
+public class ReceiveOrder {
 
-  private String name;
+  String customerId;
 
-  private int age;
+  String pod;
 }
