@@ -11,5 +11,6 @@ public interface Endpoints {
   String PLACE_ORDER = "/place-order";
   String RECEIVE_ORDER = "/receive-order";
   String ALL_DELIVERED_ORDERS = "/orders/delivered";
+  String ALL_PLACED_ORDERS = "/orders/placed";
   String PODS = "/pods";
 }

@@ -57,6 +57,36 @@ public class LockerService {
     queue.add(order);
   }
 
+  public boolean isQueueEmpty() {
+    return queue.isEmpty();
+  }
+
+  public Order getFirstQueue() {
+    if(isQueueEmpty()) {
+      return null;
+    }
+    return queue.getFirst();
+  }
+
+  public Order getLastQueue() {
+    if(isQueueEmpty()) {
+      return null;
+    }
+    return queue.getLast();
+  }
+
+  public void addFirstQueue(Order order) {
+    queue.addFirst(order);
+  }
+
+  public void removeFirstQueue() {
+    queue.removeFirst();
+  }
+
+  public void removeLastQueue() {
+    queue.removeLast();
+  }
+
   public boolean isLockerFree(Order order) {
     for (Locker locker : lockers) {
       if (locker.getLockerState().getState().equalsIgnoreCase(State.UNLOCKED.getState()) &&
@@ -89,7 +119,7 @@ public class LockerService {
     return BaseResponse.<List<Locker>>builder().code(Constants.SUCCESS_CODE).message(message).response(podLockers).build();
   }
 
-  public void freeAllLockers(String lockerId) {
+  public void freeLocker(String lockerId) {
     for (Locker locker : lockers) {
       if(locker.getLockerId().equalsIgnoreCase(lockerId)) {
         locker.setLockerState(State.UNLOCKED);
