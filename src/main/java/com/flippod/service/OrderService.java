@@ -140,10 +140,13 @@ public class OrderService {
     if(lockerService.isQueueEmpty()) {
       return;
     }
-    Order order = lockerService.getQueuedOrder();
+    Order order = lockerService.getFirstQueue();
     while(placeOrder(order).equalsIgnoreCase(Constants.SUCCESS_MESSAGE)) {
-     lockerService.removeQueuedOrder();
-     order = lockerService.getQueuedOrder();
+     lockerService.removeFirstQueue();
+     order = lockerService.getFirstQueue();
     }
+    order = lockerService.getLastQueue();
+    lockerService.removeLastQueue();
+    lockerService.addFirstQueue(order);
   }
 }

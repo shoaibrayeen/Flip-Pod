@@ -61,15 +61,30 @@ public class LockerService {
     return queue.isEmpty();
   }
 
-  public Order getQueuedOrder() {
-    if(queue.isEmpty()) {
+  public Order getFirstQueue() {
+    if(isQueueEmpty()) {
       return null;
     }
     return queue.getFirst();
   }
 
-  public void removeQueuedOrder() {
+  public Order getLastQueue() {
+    if(isQueueEmpty()) {
+      return null;
+    }
+    return queue.getLast();
+  }
+
+  public void addFirstQueue(Order order) {
+    queue.addFirst(order);
+  }
+
+  public void removeFirstQueue() {
     queue.removeFirst();
+  }
+
+  public void removeLastQueue() {
+    queue.removeLast();
   }
 
   public boolean isLockerFree(Order order) {
